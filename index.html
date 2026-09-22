@@ -1,0 +1,54 @@
+from pathlib import Path
+import re, zipfile, shutil
+
+base = Path("/mnt/data/aiday-dilya-wedding-github")
+html_path = base / "index.html"
+
+html = html_path.read_text(encoding="utf-8")
+
+# Set exact wedding date/time: 26 September 2026, 17:00 Bishkek (UTC+6)
+html = html.replace(
+    'const weddingDate = null;',
+    'const weddingDate = new Date("2026-09-26T17:00:00+06:00");'
+)
+
+# Update visible event time from 15:00 to 17:00
+html = html.replace("Бишкек · 15:00 · Салтанат", "Бишкек · 17:00 · Салтанат")
+html = html.replace('<h3 class="event-name">15:00</h3>', '<h3 class="event-name">17:00</h3>')
+html = html.replace(
+    '<!-- Дата азырынча берилбегендиктен бул countdown\'ду JS\'тен өзгөртө аласыз -->',
+    '<!-- Той: 26-сентябрь 2026, 17:00 (Бишкек, UTC+6) -->'
+)
+html = html.replace(
+    '''       Тойдун так датасы берилгенде төмөнкү сапты өзгөртүңүз.
+
+       Мисалы:
+       const weddingDate = new Date("2026-10-10T15:00:00+06:00");
+
+       Азыр дата белгисиз болгондуктан countdown иштетилген жок.
+    ''',
+    '''       Тойдун датасы:
+       26-сентябрь 2026, 17:00 (Бишкек, UTC+6)
+    '''
+)
+
+html_path.write_text(html, encoding="utf-8")
+
+readme = (base / "README.md").read_text(encoding="utf-8")
+readme = readme.replace(
+    "## Тойдун датасын кошуу\n\n`index.html` ичинен:\n\n```js\nconst weddingDate = null;\n```\n\nдегенди, мисалы:\n\n```js\nconst weddingDate = new Date(\"2026-10-10T15:00:00+06:00\");\n```\n\nдеп өзгөртүңүз.",
+    "## Тойдун датасы\n\nCountdown азыртан даяр коюлду:\n\n**26-сентябрь 2026, 17:00 (Бишкек, UTC+6)**."
+)
+(base / "README.md").write_text(readme, encoding="utf-8")
+
+zip_path = Path("/mnt/data/aiday-dilya-wedding-github-pages-final.zip")
+if zip_path.exists():
+    zip_path.unlink()
+
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    for p in base.rglob("*"):
+        if p.is_file():
+            z.write(p, p.relative_to(base.parent))
+
+print("Даяр: 26-сентябрь 2026, 17:00 countdown кошулду.")
+print(zip_path)
